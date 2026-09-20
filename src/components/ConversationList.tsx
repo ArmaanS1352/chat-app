@@ -1,4 +1,7 @@
 import type { Conversation } from "../types"
+import { currentUser } from "../currentUser"
+
+
 
 type ConversationListProps = {
     conversations: Conversation[]
@@ -11,6 +14,7 @@ function ConversationList({
     onSelectConversation,
     conversations,
 }: ConversationListProps) {
+
     return (
         <aside className="w-50 border-r border-gray-200 bg-white">
 
@@ -24,25 +28,31 @@ function ConversationList({
 
 
             <div>
-                {conversations.map((conversation) => (
-                    <div
-                        key={conversation.id}
-                        className={`cursor-pointer border-b border-gray-100 p-2 ${
-                            conversation.id === selectedConversationId
-                                ? "bg-gray-100"
-                                : "hover:bg-gray-50"
-                        }`}
-                        onClick={() => onSelectConversation(conversation.id)}
-                    >
-                        <h3 className="font-medium text-gray-900">
-                            {conversation.name}
-                        </h3>
+                {conversations.map((conversation) => {
+                    const otherUser = conversation.memberships.find(
+                        (membership) => membership.user.id !== currentUser.id
+                    )    
+                    
+                    return (
+                        <div
+                            key={conversation.id}
+                            className={`cursor-pointer border-b border-gray-100 p-2 ${
+                                conversation.id === selectedConversationId
+                                    ? "bg-gray-100"
+                                    : "hover:bg-gray-50"
+                            }`}
+                            onClick={() => onSelectConversation(conversation.id)}
+                        >
+                            <h3 className="font-medium text-gray-900">
+                                {otherUser?.user.name}
+                            </h3>
 
-                        <p className="mt-1 text-sm text-gray-500">
-                            {conversation.lastMessage}
-                        </p>
-                    </div>
-                ))}
+                            <p className="mt-1 text-sm text-gray-500">
+                                {conversation.lastMessage}
+                            </p>
+                        </div>
+                    )
+                })}
             </div>
 
 

@@ -2,6 +2,11 @@ import { useState, useRef, useEffect } from "react"
 import type { Conversation } from "../types"
 import MessageBubble from "./MessageBubble"
 import { socket } from "../socket"
+import { currentUser } from "../currentUser"
+
+
+
+
 
 type ChatWindowProps = {
     conversation: Conversation
@@ -69,7 +74,7 @@ function ChatWindow({conversation, onSendMessage}: ChatWindowProps) {
                     <MessageBubble
                         key={message.id}
                         message={message}
-                        currentUserId={7}
+                        currentUserId={currentUser.id}
                     />
                 ))}
 

@@ -45,6 +45,7 @@ app.get("/api/conversations", async(_req, res) => {
             name: conversation.name,
             lastMessage,
             messages: conversation.messages,
+            memberships: conversation.memberships,
         }
     })
 

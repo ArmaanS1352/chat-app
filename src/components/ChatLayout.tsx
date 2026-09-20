@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { socket} from "../socket";
 import type { Conversation } from "../types";
 import type { Message } from "../types";
+import { currentUser } from "../currentUser";
 
 
 
@@ -69,7 +70,7 @@ function ChatLayout() {
         socket.emit("sendMessage", {
             text,
             conversationId: selectedConversationId,
-            senderId: 7,
+            senderId: currentUser.id,
         })
     }
 
