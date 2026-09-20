@@ -1,0 +1,114 @@
+1
+---------------
+- we installed express as a node.js web server framework, vite is serving the frontend but express is needed to accept
+connections from multiple users and comm between them. its just the server itself and does not itself perform the comm
+between users
+- we already had socket.io-client so we needed to install socket.io for the server side. the react browser talks to the
+socket client, which talks to socket.io (server) which talks to node server (express)
+- tsx is just to let node run ts files as it doesnt do so natively
+---------------
+
+
+2
+---------------
+- we just called express() and stored it in a var, this makes an app we're configuring, no need for too much detail
+there yet
+- we import the createserver utility from node's http class then pass our app to the createserver. express gives us the app
+that we pass to the createserver to attach our app to an actual http server
+- we just call new server and pass the httpserver we just made into it and store that in a variable io, so now we have the
+actual socket.io server. 
+- then we set our frontend url as the origin in cors
+- now we can run actual socket commands to the server, like io.on("xyz", run this function). when you have a socket parameter
+for one such socket command, it represents and individual connected browser. each user gets their own socket object and we
+can refer to that with the socket parameter.
+- console logging the socket id is self explanatory
+- so the io function runs on connection, then all the functions inside are able to run based on whatever condition we set,
+like socket.on disconnect, run this function
+- last we tell the server to start listening to a particular port for incoming connections
+---------------
+
+
+3
+---------------
+- we import io from socket client which is the counterpart to server from socket. the former is what the react app uses while
+the latter is for the server which we just made
+- in the server, io = our new server, but on the client side socket = this browsers connection. we export the connection
+so other files can use it and all import the same connection.
+- server side listeners like socket.on or io.on relay messages on the server side but client side listeners perform actions
+up to the server, like when an individual browser says "i connected to server 34789535", vs when the server says
+"client 938563296 connected"
+- only other thing in socket file is an optional connect error listener that logs a message when a connection error happens,
+useful for debugging.
+- the only really important line here is the export a variable named socket that refers to the individual client side 
+connection thats established by running the libraries io function and passing the server url at port 3001
+---------------
+
+
+4
+----------------
+- importing a module executes its top level code, so just importing socket in chatlayout instantly runs the export socket =
+io("server url) line and establishes the connection from the isolated app open in the browser to having a socket into our
+server 
+- our first socket event code was in server, a listener waiting for an event we called typing, which is not a built in socket
+command but is just a name we chose, the important part is the client and server both get the same name. then the function
+that listener is waiting to run is broadcast.emit("typing"), which will specifically send the given command to all other
+connected clients but not the client who just sent it. a browser doesnt receive its own broadcast.
+- this does not make the browser do anything yet, just makes the server ready to receive a typing command and relay it
+----------------
+
+
+5
+----------------
+- in chatwindow we now get the client (socket) side to do its job of actually emitting a typing command to the server. we
+put the emit inside the onchange command for the obvious reason that we need it to execute in the same block where we're
+detecting a change in the input field for the chat. all code inside onchange will run every time that component (the text
+box) has a change. the name we chose for the cmd, typing, is the connection here. the server is listening for a typing and 
+now the browser will send a typing when the user types
+- so now the server listens for typing and broadcasts typing to all other clients and the browser can send typing, but the 
+other clients dont yet know what to do when they receive the broadcast.
+----------------
+
+
+6
+----------------
+- for the client side listening process, we need to put the code interacting with socket inside a useeffect as the point of
+useeffect is to execute something after the main rendering of a component but the code to be executed deals with something
+outside the regular react rendering. THE WHOLE MAIN BODY OF A REACT COMPONENT RERENDERS EVERY TIME THE COMPONENT DOES.
+- rember that () => {} is just an unnamed function with no parameters, just an arrow function. we're just passing the func
+to useffect at the same time that we're writing the function itself rather than giving it a name separately. handleTyping
+is just another arrow function but we're storing it in a variable. same arrow func syntax but set = some variable name. all
+its doing is running the usestate func to setIsTyping to true. another arrow func with the opposite purpose.
+- we have a socket listener for the typing command that will run handleTyping when it gets it, importantly we give just the
+function name and not name() which would run the func immediately rather than letting the listener decide. the stopTyping
+listener is just the exact opposite.
+- instead of returning some value we can also return functions, so the return starts with an arrow function with the purpose
+of stopping the listeners so they dont accumulate over rerenders and spam commands multiple times
+- the 1st argument of useeffect is the function to run, the 2nd argument is the dependency array which tells react when to
+again run the function. an empty array means only run when the component mounts and dont rerun
+- THE POINT OF INTERACTING WITH USESTATE THROUGH AN ARROW FUNC STORED IN A VARIABLE is that it keeps the reference to 
+individual listeners in a way that just calling the usestate function directly cant.
+- putting a boolean variable && (a react component) will run the react component only if the boolean evaluates true so we
+can use this to finally render the user is typing message by accessing the isTyping boolean from usestate.
+- at this point we have all the infrastructure for starting the user is typing message but no way to clear or stop that
+message, we have the stopTyping listeners waiting for that command but theres no piece waiting to send that command out
+or code able to use that command yet.
+-----------------
+
+
+7
+-----------------
+- useref just makes a object that react preservers between renders and the value can be accessed by .current
+- differs to usestate as changes to a ref are literally just like changing a variable, meaning it does NOT cause a rerender
+like changing a usestate does.
+- useRef< ... >(null) is a generic type argument, to tell ts the kinda value that can be in the useref. the types we chose
+were ReturnType<typeof setTimeout> | null. rember that | just means or so the ref has those 2 options as types. null is 
+needed because when we first make the ref it doesnt have a timeout value yet. ReturnType<> is just like .typeOf from C,
+but instead of the object type it gets that objects returntype for us instead of us having to fgure it out on our own.
+looks complicated but its literally just saying that this ref can contain either null or whatever type the return of
+setTimeout is.
+- because the timer and the cleartimer are both inside the onchange for the chatbox, every time the user types within
+1000ms (or however long we have the timer set) the timer will be cleared and remade at 1000ms and the function inside the
+setTimeout will never run. only when the onChange doesnt trigger for 1000ms will the timer finally be able to run the func
+which has a socket.emit for the stopTyping command, which the stopTyping listener will receive, set isTyping to false, which
+because its a usestate value will force a rerender which will make the conditionally rendered react component for user is
+typing no longer
