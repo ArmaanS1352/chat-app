@@ -1,6 +1,6 @@
 import ConversationList from "./ConversationList";
 import ChatWindow from "./ChatWindow";
-import { useEffect, useState } from "react";
+import {useEffect, useState } from "react";
 import { socket} from "../socket";
 import type { Conversation } from "../types";
 import type { Message } from "../types";
@@ -16,22 +16,21 @@ function ChatLayout() {
         (conversation) => conversation.id === selectedConversationId
     )
 
-
+    const fetchConversations = async () => {
+        const response = await fetch(
+            "http://localhost:3001/api/conversations"
+        )
+        const data = await response.json()
+        setConversationData(data)
+    }
 
     useEffect(() => {
-        const fetchConversations = async () => {
-            const response = await fetch(
-                "http://localhost:3001/api/conversations"
-            )
-            const data = await response.json()
-            setConversationData(data)
-        }
-
         fetchConversations()
+    }, [])
 
-    }, [selectedConversationId])
-
-
+    useEffect(() => {
+        socket.emit("joinUser", currentUser.id)
+    }, [])
 
 
     useEffect(() => {
@@ -59,11 +58,6 @@ function ChatLayout() {
 
     }, [])
 
-
-
-    useEffect(() => {
-        socket.emit("joinConversation", selectedConversationId)
-    }, [selectedConversationId])
     
 
     const handleSendMessage = (text: string) => {
@@ -83,6 +77,7 @@ function ChatLayout() {
                 conversations={conversationData}
                 selectedConversationId={selectedConversationId}
                 onSelectConversation={setSelectedConversationId}
+                onConversationsChanged={fetchConversations}
             />
             {selectedConversation && (
                 <ChatWindow 

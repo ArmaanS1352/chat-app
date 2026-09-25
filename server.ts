@@ -7,6 +7,7 @@ import cors from "cors"
 
 
 const app = express()
+app.use(express.json())
 
 app.use(cors({
     origin: "http://localhost:5173",
@@ -52,6 +53,55 @@ app.get("/api/conversations", async(_req, res) => {
     res.json(formatted)
 })
 
+app.post("/api/conversations", async (req, res) => {
+    const {name, userIds} = req.body
+
+    const conversation = await prisma.conversation.create({
+        data: {
+            name,
+            memberships: {
+                create: userIds.map((userId: number) => ({
+                    userId,
+                })),
+            },
+        },
+        include: {
+            memberships: {
+                include: {
+                    user: true,
+                },
+            },
+            messages: true,
+        },
+    })
+
+    res.json(conversation)
+})
+
+app.delete("/api/conversations/:id", async (req, res) => {
+    const conversationId = Number(req.params.id)
+
+    await prisma.message.deleteMany({
+        where: {
+            conversationId,
+        },
+    })
+
+    await prisma.conversationMember.deleteMany({
+        where: {
+            conversationId,
+        },
+    })
+
+    await prisma.conversation.delete({
+        where: {
+            id: conversationId,
+        },
+    })
+
+    res.json({success: true})
+})
+
 
 
 
@@ -68,35 +118,74 @@ io.on("connection", (socket) => {
             },
         })
 
-        io.to(`conversation-${message.conversationId}`).emit("message", message)
-    })
+        const conversation = await prisma.conversation.findUnique({
+            where: {
+                id: message.conversationId,
+            },
+            include: {
+                memberships: true,
+            },
+        })
 
+        conversation?.memberships.forEach((membership) => {
+            io.to(`user-${membership.userId}`).emit(
+                "message",
+                message
+            )
+        })
+    })
 
     socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id)
     })
-    socket.on("typing", () => {
-        socket.broadcast.emit("typing")
+
+
+
+
+
+    let currentUserId: number | null = null 
+
+    socket.on("joinUser", (userId) => {
+        currentUserId = userId
+        socket.join(`user-${userId}`)
+        console.log("Joined user room: ", userId)
     })
-    socket.on("stopTyping", () => {
-        socket.broadcast.emit("stopTyping")
+
+    socket.on("typing", async (conversationId) => {
+        const conversation = await prisma.conversation.findUnique({
+            where: {
+                id: conversationId,
+            },
+            include: {
+                memberships: true,
+            },
+        })
+
+        conversation?.memberships.forEach((membership) => {
+            if (membership.userId !== currentUserId) {
+                io.to(`user-${membership.userId}`).emit("typing", conversationId)
+            }
+        })
+    })
+
+    socket.on("stopTyping", async (conversationId) => {
+        const conversation = await prisma.conversation.findUnique({
+            where: {
+                id: conversationId,
+            },
+            include: {
+                memberships: true,
+            },
+        })
+
+        conversation?.memberships.forEach((membership) => {
+            if (membership.userId !== currentUserId) {
+                io.to(`user-${membership.userId}`).emit("stopTyping", conversationId)
+            }
+        })
     })
 
 
-
-    let currentConversationId: number | null = null
-
-    socket.on("joinConversation", (conversationId) => {
-        if (currentConversationId !== null) {
-            socket.leave(`conversation-${currentConversationId}`)
-            console.log("left conversation: ", currentConversationId)
-        }
-
-        socket.join(`conversation-${conversationId}`)
-        currentConversationId = conversationId
-
-        console.log("joined conversation: ", conversationId)
-    })
 
 })
 

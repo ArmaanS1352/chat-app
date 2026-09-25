@@ -23,24 +23,34 @@ function ChatWindow({conversation, onSendMessage}: ChatWindowProps) {
         messagesEndRef.current?.scrollIntoView()
     }, [conversation.messages])
 
+
+
     useEffect( () => {
-        const handleTyping = () => {
+        const handleTyping = (conversationId: number) => {
+            if (conversationId !== conversation.id)
+                return
+
             setIsTyping(true)
         }
 
-        const handleStopTyping = () => {
+        const handleStopTyping = (conversationId: number) => {
+            if (conversationId !== conversation.id)
+                return
+
             setIsTyping(false)
         }
 
         socket.on("stopTyping", handleStopTyping)
-
         socket.on("typing", handleTyping)
 
         return () => {
             socket.off("stopTyping", handleStopTyping)
             socket.off("typing", handleTyping)
         }
-    }, [])
+        
+    }, [conversation.id])
+
+
 
     const handleSend = () => {
         if (message.trim() === "")
@@ -98,14 +108,14 @@ function ChatWindow({conversation, onSendMessage}: ChatWindowProps) {
 
                         onChange={(event) => {
                             setMessage(event.target.value)
-                            socket.emit("typing")
+                            socket.emit("typing", conversation.id)
 
                             if (typingTimeoutref.current) {
                                 clearTimeout(typingTimeoutref.current)
                             }
 
                             typingTimeoutref.current = setTimeout(() => {
-                                socket.emit("stopTyping")
+                                socket.emit("stopTyping", conversation.id)
                             }, 1000);
                         }}
 
