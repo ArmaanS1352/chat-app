@@ -2,16 +2,18 @@ import ConversationList from "./ConversationList";
 import ChatWindow from "./ChatWindow";
 import {useEffect, useState } from "react";
 import { socket} from "../socket";
-import type { Conversation } from "../types";
-import type { Message } from "../types";
-import { currentUser } from "../currentUser";
+import type { Conversation, Message, User } from "../types";
+import { fetchUsers } from "../users";
 
 
+type chatLayoutProps = {
+    currentUser: User
+}
 
-
-function ChatLayout() {
+function ChatLayout({currentUser}: chatLayoutProps) {
     const [selectedConversationId, setSelectedConversationId] = useState(1)
     const [conversationData, setConversationData] = useState<Conversation[]>([])
+    const [users, setUsers] = useState<User[]>([])
     const selectedConversation = conversationData.find(
         (conversation) => conversation.id === selectedConversationId
     )
@@ -25,12 +27,29 @@ function ChatLayout() {
     }
 
     useEffect(() => {
-        fetchConversations()
+        const loadUsers = async () => {
+            const data = await fetchUsers()
+            setUsers(data)
+        }
+
+        loadUsers()
+    }, [])
+
+    useEffect(() => {
+        const loadConversations = async () => {
+            const response = await fetch(
+                "http://localhost:3001/api/conversations"
+            )
+            const data = await response.json()
+            setConversationData(data)
+        }
+
+        loadConversations()
     }, [])
 
     useEffect(() => {
         socket.emit("joinUser", currentUser.id)
-    }, [])
+    }, [currentUser])
 
 
     useEffect(() => {
@@ -58,9 +77,43 @@ function ChatLayout() {
 
     }, [])
 
-    
+    useEffect(() => {
+        const handleConversationCreated = (conversation: Conversation) => {
+            setConversationData((currentConversations) => {
+                const alreadyExists = currentConversations.some(
+                    (existingConversation) => existingConversation.id === conversation.id
+                )
+
+                if (alreadyExists)
+                    return currentConversations
+
+                return [...currentConversations, conversation]
+            })
+        }
+
+        socket.on("conversationCreated", handleConversationCreated)
+
+        return () => {
+            socket.off("conversationCreated", handleConversationCreated)
+        }
+    }, [])
+
+    useEffect(() => {
+        const handleConversationDeleted = () => {
+            fetchConversations()
+        }
+
+        socket.on("conversationDeleted", handleConversationDeleted)
+
+        return () => {
+            socket.off("conversationDeleted", handleConversationDeleted)
+        }
+    })
 
     const handleSendMessage = (text: string) => {
+        if (!currentUser)
+            return
+
         socket.emit("sendMessage", {
             text,
             conversationId: selectedConversationId,
@@ -78,11 +131,14 @@ function ChatLayout() {
                 selectedConversationId={selectedConversationId}
                 onSelectConversation={setSelectedConversationId}
                 onConversationsChanged={fetchConversations}
+                currentUser={currentUser}
+                users={users}
             />
             {selectedConversation && (
                 <ChatWindow 
                     conversation={selectedConversation}
                     onSendMessage={handleSendMessage}
+                    currentUserId={currentUser.id}
                 />
             )}
         </div>

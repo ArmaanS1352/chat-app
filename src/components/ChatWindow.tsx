@@ -2,8 +2,6 @@ import { useState, useRef, useEffect } from "react"
 import type { Conversation } from "../types"
 import MessageBubble from "./MessageBubble"
 import { socket } from "../socket"
-import { currentUser } from "../currentUser"
-
 
 
 
@@ -11,9 +9,10 @@ import { currentUser } from "../currentUser"
 type ChatWindowProps = {
     conversation: Conversation
     onSendMessage: (text: string) => void
+    currentUserId: number
 }
 
-function ChatWindow({conversation, onSendMessage}: ChatWindowProps) {
+function ChatWindow({conversation, onSendMessage, currentUserId}: ChatWindowProps) {
     const [message, setMessage] = useState("")
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const [isTyping, setIsTyping] = useState(false)
@@ -84,7 +83,7 @@ function ChatWindow({conversation, onSendMessage}: ChatWindowProps) {
                     <MessageBubble
                         key={message.id}
                         message={message}
-                        currentUserId={currentUser.id}
+                        currentUserId={currentUserId}
                     />
                 ))}
 

@@ -1,6 +1,5 @@
-import type { Conversation } from "../types"
-import { currentUser } from "../currentUser"
-
+import { useState } from "react"
+import type { Conversation, User } from "../types"
 
 
 type ConversationListProps = {
@@ -8,6 +7,8 @@ type ConversationListProps = {
     selectedConversationId: number
     onSelectConversation: (id: number) => void
     onConversationsChanged: () => void
+    currentUser: User
+    users: User[]
 }
 
 function ConversationList({
@@ -15,11 +16,34 @@ function ConversationList({
     onSelectConversation,
     conversations,
     onConversationsChanged,
+    currentUser,
+    users,
 }: ConversationListProps) {
     let count = 1
+    const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
+    const otherUsers = users.filter((
+        (user) => user.id !== currentUser.id
+    ))
 
-    const handleCreateConversation = async () => {
-        const response = await fetch(
+    const handleCreateConversation = async (otherUserId: number) => {
+        const existingConversation = conversations.find((conversation) => {
+            const memberIds = conversation.memberships.map(
+                (membership) => membership.userId
+            )
+
+            return (
+                memberIds.length === 2 &&
+                memberIds.includes(currentUser.id) &&
+                memberIds.includes(otherUserId)
+            )
+        })
+
+        if (existingConversation) {
+            onSelectConversation(existingConversation.id)
+            return
+        }
+
+        await fetch(
             "http://localhost:3001/api/conversations",
             {
                 method: "POST",
@@ -27,15 +51,14 @@ function ConversationList({
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    name: "New Conversation",
-                    userIds: [7, 8],
-                })
+                    currentUserId: currentUser.id,
+                    userIds: [currentUser.id, otherUserId],
+                }),
             },
         )
 
-        const conversation = await response.json()
-
-        console.log(conversation)
+        setSelectedUserId(null)
+        onConversationsChanged()
     }
 
     const handleDeleteConversation = async (conversationId: number) => {
@@ -109,9 +132,31 @@ function ConversationList({
 
 
             <div className="mt-auto p-4">
+                <select 
+                    className="w-full rounded border border-gray-200 p-2"
+                    value={selectedUserId ?? ""}
+                    onChange={(event) => {
+                        setSelectedUserId(Number(event.target.value))
+                    }}    
+                >
+                    <option value="" disabled>
+                        Select a user
+                    </option>
+
+                    {otherUsers.map((user) => (
+                        <option key={user.id} value={user.id}>
+                            {user.name}
+                        </option>
+                    ))}
+                </select>
+                    
                 <button
-                    className="w-full rounded border border-gray-600 p-2 text-left font-medium bg-blue-500 hover:bg-blue-700"
-                    onClick={handleCreateConversation}
+                    className="w-full mt-2 rounded border border-gray-200 p-3 text-left font-medium bg-blue-500 hover:bg-gray-50"
+                    onClick={() => {
+                        if (selectedUserId === null) return
+                        handleCreateConversation(selectedUserId)}
+                    }
+                    disabled={selectedUserId === null}
                 >
                     + New Conversation
                 </button>
