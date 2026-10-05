@@ -14,9 +14,39 @@ function ChatLayout({currentUser}: chatLayoutProps) {
     const [selectedConversationId, setSelectedConversationId] = useState(1)
     const [conversationData, setConversationData] = useState<Conversation[]>([])
     const [users, setUsers] = useState<User[]>([])
+    const [onlineUserIds, setOnlineUserIds] = useState<number[]>([])
     const selectedConversation = conversationData.find(
         (conversation) => conversation.id === selectedConversationId
     )
+
+    useEffect(() => {
+        const handleOnlineUsers = (userIds: number[]) => {
+            setOnlineUserIds(userIds)
+        }
+
+        const handleUserOnline = (userId: number) => {
+            setOnlineUserIds((currentIds) => {
+                if (currentIds.includes(userId))
+                    return currentIds
+
+                return [...currentIds, userId]
+            })
+        }
+
+        const handleUserOffline = (userId: number) => {
+            setOnlineUserIds((currentIds) => currentIds.filter((id) => id !== userId))
+        }
+
+        socket.on("userOnline", handleUserOnline)
+        socket.on("userOffline", handleUserOffline)
+        socket.on("onlineUsers", handleOnlineUsers)
+
+        return () => {
+            socket.off("userOnline", handleUserOnline)
+            socket.off("userOffline", handleUserOffline)
+            socket.off("onlineUsers", handleOnlineUsers)
+        }
+    }, [])
 
     const fetchConversations = async () => {
         const response = await fetch(
@@ -139,6 +169,7 @@ function ChatLayout({currentUser}: chatLayoutProps) {
                     conversation={selectedConversation}
                     onSendMessage={handleSendMessage}
                     currentUserId={currentUser.id}
+                    onlineUserIds={onlineUserIds}
                 />
             )}
         </div>

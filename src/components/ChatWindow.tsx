@@ -10,13 +10,20 @@ type ChatWindowProps = {
     conversation: Conversation
     onSendMessage: (text: string) => void
     currentUserId: number
+    onlineUserIds: number[]
 }
 
-function ChatWindow({conversation, onSendMessage, currentUserId}: ChatWindowProps) {
+function ChatWindow({conversation, onSendMessage, currentUserId, onlineUserIds}: ChatWindowProps) {
     const [message, setMessage] = useState("")
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const [isTyping, setIsTyping] = useState(false)
     const typingTimeoutref = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const otherUser = conversation.memberships.find(
+        (membership) => membership.userId !== currentUserId
+    )
+    const isOnline: boolean = otherUser 
+        ? onlineUserIds.includes(otherUser.userId)
+        : false
 
     useEffect( () => {
         messagesEndRef.current?.scrollIntoView()
@@ -71,8 +78,8 @@ function ChatWindow({conversation, onSendMessage, currentUserId}: ChatWindowProp
                     {conversation.name}
                 </h2>
 
-                <p className="text-sm text-green-600">
-                    Online
+                <p className={`text-sm ${isOnline ? "text-green-600" : "text-red-600"}`}>
+                    {isOnline ? "Online" : "Offline"}
                 </p>
             </header>
 

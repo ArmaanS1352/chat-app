@@ -74,7 +74,7 @@ function ConversationList({
 
     return (
         
-        <aside className="flex h-full w-50 flex-col border-r border-gray-200 bg-white">
+        <aside className="flex h-full w-60 flex-col border-r border-gray-200 bg-white">
 
 
             <div className="border-b border-gray-200 p-3">
@@ -87,6 +87,12 @@ function ConversationList({
 
             <div>
                 {conversations.map((conversation) => {
+                    if (!conversation.memberships.some(
+                        (membership) => membership.userId === currentUser.id
+                    )) {
+                        return null
+                    }
+                    
                     const otherUser = conversation.memberships.find(
                         (membership) => membership.user.id !== currentUser.id
                     )    
@@ -160,6 +166,10 @@ function ConversationList({
                 >
                     + New Conversation
                 </button>
+
+                <p className="p-3 font-bold">
+                    {`Logged in as: ${currentUser.name}`}
+                </p>
             </div>
 
 

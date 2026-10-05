@@ -21,6 +21,8 @@ const io = new Server(httpServer, {
     },
 })
 
+const onlineUsers = new Set<number>()
+
 
 
 app.get("/api/conversations", async(_req, res) => {
@@ -225,6 +227,11 @@ io.on("connection", (socket) => {
     })
 
     socket.on("disconnect", () => {
+        if (currentUserId !== null) {
+            onlineUsers.delete(currentUserId)
+            socket.broadcast.emit("userOffline", currentUserId)
+        }
+        
         console.log("User disconnected:", socket.id)
     })
 
@@ -237,7 +244,9 @@ io.on("connection", (socket) => {
     socket.on("joinUser", (userId) => {
         currentUserId = userId
         socket.join(`user-${userId}`)
-        console.log("Joined user room: ", userId)
+        onlineUsers.add(userId)
+        socket.emit("onlineUsers", Array.from(onlineUsers))
+        socket.broadcast.emit("userOnline", userId)
     })
 
     socket.on("typing", async (conversationId) => {
