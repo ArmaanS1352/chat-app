@@ -4,7 +4,7 @@ import {useEffect, useState } from "react";
 import { socket} from "../socket";
 import type { Conversation, Message, User } from "../types";
 import { fetchUsers } from "../users";
-
+import { API_URL } from "../api";
 
 type chatLayoutProps = {
     currentUser: User
@@ -50,7 +50,7 @@ function ChatLayout({currentUser}: chatLayoutProps) {
 
     const fetchConversations = async () => {
         const response = await fetch(
-            "http://localhost:3001/api/conversations"
+            `${API_URL}/api/conversations`
         )
         const data = await response.json()
         setConversationData(data)
@@ -68,7 +68,7 @@ function ChatLayout({currentUser}: chatLayoutProps) {
     useEffect(() => {
         const loadConversations = async () => {
             const response = await fetch(
-                "http://localhost:3001/api/conversations"
+                `${API_URL}/api/conversations`
             )
             const data = await response.json()
             setConversationData(data)
@@ -151,6 +151,18 @@ function ChatLayout({currentUser}: chatLayoutProps) {
         })
     }
 
+    useEffect(() => {
+        const handleUserCreated = (user: User) => {
+            setUsers((currentUsers) => [...currentUsers, user])
+        }
+
+        socket.on("userCreated", handleUserCreated)
+
+        return () => {
+            socket.off("userCreated", handleUserCreated)
+        }
+    }, [])
+
 
 
 
@@ -158,7 +170,7 @@ function ChatLayout({currentUser}: chatLayoutProps) {
         <div className="flex h-screen">
             <ConversationList 
                 conversations={conversationData}
-                selectedConversationId={selectedConversationId}
+                setSelectedConversationId={setSelectedConversationId}
                 onSelectConversation={setSelectedConversationId}
                 onConversationsChanged={fetchConversations}
                 currentUser={currentUser}

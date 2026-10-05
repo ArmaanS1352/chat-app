@@ -2,7 +2,6 @@ import './App.css'
 import ChatLayout from './components/ChatLayout'
 import { useEffect, useState } from 'react'
 import type { User } from './types'
-import { fetchUsers } from './users'
 import LoginPage from './components/LoginPage'
 
 

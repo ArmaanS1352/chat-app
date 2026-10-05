@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { Conversation, User } from "../types"
+import { API_URL } from "../api"
 
 
 type ConversationListProps = {
@@ -43,8 +44,8 @@ function ConversationList({
             return
         }
 
-        await fetch(
-            "http://localhost:3001/api/conversations",
+        const response = await fetch(
+            `${API_URL}/api/conversations`,
             {
                 method: "POST",
                 headers: {
@@ -57,13 +58,16 @@ function ConversationList({
             },
         )
 
+        const newConvo = await response.json()
+
+        onSelectConversation(newConvo.id)
         setSelectedUserId(null)
         onConversationsChanged()
     }
 
     const handleDeleteConversation = async (conversationId: number) => {
         await fetch(
-            `http://localhost:3001/api/conversations/${conversationId}`,
+            `${API_URL}/api/conversations/${conversationId}`,
             {
                 method: "DELETE",
             }
@@ -92,7 +96,7 @@ function ConversationList({
                     )) {
                         return null
                     }
-                    
+
                     const otherUser = conversation.memberships.find(
                         (membership) => membership.user.id !== currentUser.id
                     )    

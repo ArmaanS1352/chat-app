@@ -1,9 +1,10 @@
 import type { User } from "./types"
+import { API_URL } from "./api"
 
 
 export const fetchUsers = async (): Promise<User[]> => {
     const response = await fetch(
-        "http://localhost:3001/api/users"
+        `${API_URL}/api/users`
     )
 
     return response.json()
@@ -11,7 +12,7 @@ export const fetchUsers = async (): Promise<User[]> => {
 
 export const createUser = async (name: string): Promise<User> => {
     const response = await fetch(
-        "http://localhost:3001/api/users",
+        `${API_URL}/api/users`,
         {
             method: "POST",
             headers: {

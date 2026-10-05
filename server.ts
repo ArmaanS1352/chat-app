@@ -180,6 +180,8 @@ app.post("/api/users", async (req, res) => {
         },
     })
 
+    io.emit("userCreated", user)
+
     res.json(user)
 })
 
@@ -191,7 +193,6 @@ app.delete("/api/users/:id", async (req, res) => {
         }
     })
 
-    console.log("DELETE RESULT:", result)
 
     res.json({success: true})
 })

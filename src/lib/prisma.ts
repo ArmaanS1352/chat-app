@@ -7,10 +7,3 @@ const adapter = new PrismaBetterSqlite3({
 export const prisma = new PrismaClient({
     adapter,
 })
-
-async function testDatabase() {
-    const users = await prisma.user.findMany()
-    console.log("Users:", users)
-}
-
-testDatabase()
