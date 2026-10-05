@@ -42,7 +42,7 @@ A full-stack real-time chat application built with React, TypeScript, Express, S
 Clone the repository and enter the project directory:
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/ArmaanS1352/chat-app.git
 cd chat-app
 ```
 
