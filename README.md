@@ -1,75 +1,131 @@
-# React + TypeScript + Vite
+# Real-Time Chat App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack real-time chat application built with React, TypeScript, Express, Socket.io, Prisma, and SQLite.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+* User creation and login
+* One-to-one conversations
+* Real-time messaging with Socket.io
+* Typing indicators
+* Online/offline status
+* Persistent messages and conversations
+* Conversation history after restarting the app
+* Real-time user and conversation creation
+* SQLite database with Prisma migrations
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Frontend**
 
-## Expanding the ESLint configuration
+* React
+* TypeScript
+* Vite
+* Tailwind CSS
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+**Backend**
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+* Node.js
+* Express
+* Socket.io
+* Prisma
+* SQLite
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Running Locally
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Requirements
 
+* [Node.js](https://nodejs.org/) installed
+
+### Setup
+
+Clone the repository and enter the project directory:
+
+```bash
+git clone https://github.com/ArmaanS1352/chat-app.git
+cd chat-app
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Install dependencies:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
 ```
+
+Initialize the SQLite database:
+
+```bash
+npm run setup
+```
+
+Start the application:
+
+```bash
+npm run dev
+```
+
+Open **http://localhost:5173** in your browser.
+
+## Testing Real-Time Features
+
+To test real-time messaging:
+
+1. Create a user in the first browser window.
+2. Open a second browser window or incognito window.
+3. Create a different user.
+4. Create a conversation between the two users.
+5. Send messages between the two windows.
+6. Test the typing indicator and online/offline status.
+
+Each local installation starts with an empty database, so users can experience the application from the beginning.
+
+## Project Structure
+
+```text
+chat-app/
+├── prisma/
+│   ├── migrations/
+│   └── schema.prisma
+├── src/
+│   ├── components/
+│   ├── generated/
+│   ├── lib/
+│   ├── api.ts
+│   ├── socket.ts
+│   ├── types.ts
+│   └── ...
+├── server.ts
+└── package.json
+```
+
+## Architecture
+
+The React frontend communicates with the Express backend through HTTP requests for persistent data and Socket.io for real-time events.
+
+```text
+React + TypeScript
+        │
+        ├── HTTP ──────────┐
+        │                  ↓
+        │              Express
+        │                  │
+        │               Prisma
+        │                  │
+        │               SQLite
+        │
+        └── Socket.io ───→ Node.js
+```
+
+The application uses Socket.io user rooms to deliver messages, conversation updates, typing indicators, and online-status information to the appropriate connected users.
+
+## Database
+
+The project uses Prisma migrations to create and update the SQLite database.
+
+To initialize a fresh database:
+
+```bash
+npm run setup
+```
+
+The local database file is intentionally excluded from version control. The database schema can be recreated from the migration files in `prisma/migrations/`.
