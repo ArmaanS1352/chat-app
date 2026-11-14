@@ -72,10 +72,9 @@ function ChatWindow({conversation, onSendMessage, currentUserId, onlineUserIds}:
     return (
         <main className="flex flex-1 flex-col bg-gray-50">
 
-
             <header className="border-b border-gray-200 bg-white p-4">
                 <h2 className="font-semibold text-gray-900">
-                    {conversation.name}
+                    {otherUser?.user.name}
                 </h2>
 
                 <p className={`text-sm ${isOnline ? "text-green-600" : "text-red-600"}`}>

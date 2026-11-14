@@ -1,27 +1,49 @@
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import express from "express"
-import { prisma } from "./src/lib/prisma"
+import { prisma } from "./src/lib/prisma.ts"
 import cors from "cors"
+import {hashPassword, verifyPassword} from "./src/lib/password.ts"
+import session from "express-session"
+import SQLiteStoreFactory from "connect-sqlite3"
+import path from "node:path"
+
 
 
 
 const app = express()
 app.use(express.json())
-
 app.use(cors({
     origin: "http://localhost:5173",
+    credentials: true
 }))
 
 const httpServer = createServer(app)
-
 const io = new Server(httpServer, {
     cors: {
-        origin: "http://localhost:5173"
+        origin: "http://localhost:5173",
+        credentials: true
     },
 })
 
+const SQLiteStore = SQLiteStoreFactory(session)
+const sessionStore = new SQLiteStore({db: "sessions.db", dir: path.join(process.cwd(), "prisma"), table: "sessions"})
+app.use(session({
+    store: sessionStore as session.Store,
+    secret: process.env.SESSION_SECRET!,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+        maxAge: 1000 * 60 * 60 * 24
+    }
+}))
+
 const onlineUsers = new Set<number>()
+
+
 
 
 
@@ -163,6 +185,11 @@ app.delete("/api/conversations/:id", async (req, res) => {
 
 app.get("/api/users", async (_req, res) => {
     const users = await prisma.user.findMany({
+        select: {
+            id: true,
+            name: true,
+            email: true
+        },
         orderBy: {
             name: "asc",
         },
@@ -171,7 +198,7 @@ app.get("/api/users", async (_req, res) => {
     res.json(users)
 })
 
-app.post("/api/users", async (req, res) => {
+/*app.post("/api/users", async (req, res) => {
     const {name} = req.body
 
     const user = await prisma.user.create({
@@ -183,7 +210,7 @@ app.post("/api/users", async (req, res) => {
     io.emit("userCreated", user)
 
     res.json(user)
-})
+})*/
 
 app.delete("/api/users/:id", async (req, res) => {
     const userId = Number(req.params.id)
@@ -195,6 +222,130 @@ app.delete("/api/users/:id", async (req, res) => {
 
 
     res.json({success: true})
+})
+
+app.post ("/api/register", async (req, res) => {
+    let {name, email, password} = req.body
+
+    if (
+        typeof name !== "string" ||
+        typeof email !== "string" ||
+        typeof password !== "string"
+    ) {
+        return res.status(400).json({
+            error: "Name, email, and password are required."
+        })
+    }
+
+    name = name.trim()
+    email = email.trim().toLocaleLowerCase()
+
+    if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({
+            error: "Please provide a valid name and email."
+        })
+    }
+
+    if (password.length < 8 || password.length > 20) {
+        return res.status(400).json({
+            error: "Password must be at least 8 characters and no more than 20."
+        })
+    }
+
+    const existingUser = await prisma.user.findUnique({
+        where: {
+            email: email
+        }
+    })
+
+    if (existingUser) {
+        return res.status(409).json({
+            error: "An account with this email already exists."
+        })
+    }
+
+    const passwordHash = await hashPassword(password)
+
+    const user = await prisma.user.create({
+        data: {
+            name: name,
+            email: email,
+            passwordHash
+        },
+        select: {
+            id: true,
+            name: true,
+            email: true
+        }
+    })
+
+    req.session.userId = user.id
+
+    return res.status(201).json({user})
+})
+
+app.post("/api/login", async (req, res) => {
+    let {email, password} = req.body
+
+    if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
+        return res.status(400).json({error: "Email and password are required"})
+    }
+
+    email = email.trim().toLowerCase()
+
+    const user = await prisma.user.findUnique({
+        where: {
+            email: email
+        }
+    })
+
+    if (!user) {
+        return res.status(401).json({
+            error: "Invalid email or password."
+        })
+    }
+
+    const isValidPassword = await verifyPassword(password, user.passwordHash)
+
+    if (!isValidPassword) {
+        return res.status(401).json({
+            error: "Invalid email or password."
+        })
+    }
+
+    req.session.userId = user.id
+
+    return res.status(200).json({
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email
+        }
+    })
+})
+
+app.get("/api/me", async (req, res) => {
+    const userId = req.session.userId
+
+    if (!userId) {
+        return res.status(401).json({error: "Not authenticated"})
+    }
+
+    const user = await prisma.user.findUnique({
+        where: {id: userId},
+        select: {
+            id: true,
+            name: true,
+            email: true,
+        },
+    })
+
+    if (!user) {
+        req.session.destroy(() => {})
+        return res.status(401).json({error: "User not found"})
+    }
+
+    return res.status(200).json({user})
 })
 
 
@@ -290,6 +441,6 @@ io.on("connection", (socket) => {
 
 
 
-httpServer.listen(3001, () => {
-    console.log("Server running on http://localhost:3001")
+httpServer.listen(3001, "0.0.0.0", () => {
+    console.log("Server running on http://0.0.0.0:3001")
 })

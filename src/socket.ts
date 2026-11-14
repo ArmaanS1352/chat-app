@@ -1,6 +1,7 @@
 import { io } from "socket.io-client";
+import { API_URL } from "./api";
 
-export const socket = io(import.meta.env.VITE_API_URL)
+export const socket = io(API_URL)
 
 socket.on("connect", () => {
     console.log("connected to server", socket.id)

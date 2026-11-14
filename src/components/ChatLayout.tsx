@@ -3,18 +3,19 @@ import ChatWindow from "./ChatWindow";
 import {useEffect, useState } from "react";
 import { socket} from "../socket";
 import type { Conversation, Message, User } from "../types";
-import { fetchUsers } from "../users";
+import { fetchCurrentUser, fetchUsers } from "../users";
 import { API_URL } from "../api";
+import LoginPage from "./LoginPage";
 
-type chatLayoutProps = {
-    currentUser: User
-}
 
-function ChatLayout({currentUser}: chatLayoutProps) {
+
+function ChatLayout() {
     const [selectedConversationId, setSelectedConversationId] = useState(1)
     const [conversationData, setConversationData] = useState<Conversation[]>([])
     const [users, setUsers] = useState<User[]>([])
     const [onlineUserIds, setOnlineUserIds] = useState<number[]>([])
+    const [currentUser, setCurrentUser] = useState<User | null>(null)
+    const [isCheckingSession, setIsCheckingSession] = useState(true)
     const selectedConversation = conversationData.find(
         (conversation) => conversation.id === selectedConversationId
     )
@@ -78,6 +79,9 @@ function ChatLayout({currentUser}: chatLayoutProps) {
     }, [])
 
     useEffect(() => {
+        if (!currentUser)
+            return
+
         socket.emit("joinUser", currentUser.id)
     }, [currentUser])
 
@@ -163,6 +167,33 @@ function ChatLayout({currentUser}: chatLayoutProps) {
         }
     }, [])
 
+    useEffect(() => {
+        const checkSession = async () => {
+            try {
+                const user = await fetchCurrentUser()
+                if (user)
+                    setCurrentUser(user)
+            } catch (error) {
+                console.error("Session check failed:", error)
+            } finally {
+                setIsCheckingSession(false)
+            }
+        }
+
+        checkSession()
+    }, [])
+
+    if (isCheckingSession) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                Loading...
+            </div>
+        )
+    }
+
+    if (!currentUser) {
+        return <LoginPage setCurrentUser={setCurrentUser}/>
+    }
 
 
 
@@ -170,7 +201,7 @@ function ChatLayout({currentUser}: chatLayoutProps) {
         <div className="flex h-screen">
             <ConversationList 
                 conversations={conversationData}
-                setSelectedConversationId={setSelectedConversationId}
+                selectedConversationId={selectedConversationId}
                 onSelectConversation={setSelectedConversationId}
                 onConversationsChanged={fetchConversations}
                 currentUser={currentUser}

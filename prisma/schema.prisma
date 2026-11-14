@@ -12,6 +12,8 @@ model User {
   name         String
   messages     Message[]            @relation("UserMessages")
   memberships  ConversationMember[]
+  email String @unique
+  passwordHash String
 }
 
 model Conversation {

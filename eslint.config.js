@@ -31,6 +31,7 @@ export default defineConfig([
       "no-redeclare": "off",
       "@typescript-eslint/no-unused-vars": "off",
       // Correct AST selector for console.log[array2]
+      "prefer-const": "off",
       "no-restricted-syntax": [
         "error",
         {
