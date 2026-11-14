@@ -131,7 +131,7 @@ function ConversationList({
                                 </button>
                             </div>
 
-                            <p className="mt-1 text-sm text-gray-500">
+                            <p className="mt-1 text-sm text-green-300">
                                 {conversation.lastMessage}
                             </p>
                             
