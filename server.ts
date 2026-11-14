@@ -30,7 +30,7 @@ const SQLiteStore = SQLiteStoreFactory(session)
 const sessionStore = new SQLiteStore({db: "sessions.db", dir: path.join(process.cwd(), "prisma"), table: "sessions"})
 app.use(session({
     store: sessionStore as session.Store,
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || "chat-app-dev-secret-change-in-production",
     resave: false,
     saveUninitialized: false,
     cookie: {
